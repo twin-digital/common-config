@@ -1,0 +1,92 @@
+name: Apply Templates
+
+on:
+  push:
+    paths:
+      - templates/**
+      - .github/**
+      - config/**
+
+jobs:
+  get-configs:
+    name: Get Configs
+    outputs:
+      configs: ${{ steps.find-configs.outputs.configs }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - id: find-configs
+        name: Find Configs
+        run: |
+          cd config
+          echo "::set-output name=configs::$(find . -type f | jq -ncR '[inputs]')"
+        shell: bash
+
+  apply-configs:
+    name: ${{ matrix.config }}
+    needs: [get-configs]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: ${{ fromJSON(needs.get-configs.outputs.configs) }}
+    steps:
+      - name: Checkout common config
+        uses: actions/checkout@v2
+        with:
+          path: common-config
+
+      - id: config
+        name: Parse configuration
+        env:
+          CONFIG: ${{ matrix.config }}
+        run: |
+          REPOSITORY=$(yq eval '.repository' "./common-config/config/${CONFIG}")
+          echo "::set-output name=repository::${REPOSITORY}"
+        shell: bash
+
+      - name: Checkout target
+        uses: actions/checkout@v2
+        with:
+          path: target
+          repository: ${{ steps.config.outputs.repository }}
+          token: ${{ secrets.TOKEN }}
+
+      - name: Add template files
+        run: |
+          cd common-config/templates
+          yq eval '.templates[]' "../config/${{ matrix.config }}" \
+            | xargs -I {} cp -TRv {} ../../target
+        shell: bash
+
+      - name: Push changes
+        env:
+          CONFIG: ${{ matrix.config }}
+        run: |
+          TEMPLATES=$(yq eval '.templates[]' "./common-config/config/${CONFIG}")
+
+          COMMIT_MESSAGE=$(cat <<-EOM
+          Apply common-config templates.
+
+          New version: ${{ github.sha }}
+
+          Templates applied:
+          ${TEMPLATES}
+          EOM
+          )
+
+          cd target
+
+
+          git config user.name "Twin-Bot"
+          git config user.email twinbot@twindigital.io
+          
+          if git diff-index --quiet HEAD --; then
+            echo No changes to apply.
+          else
+            git add .
+            git commit -m "${COMMIT_MESSAGE}"
+            git push
+          fi
+        shell: bash
+
