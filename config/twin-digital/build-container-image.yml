@@ -1,4 +1,0 @@
-repository: twin-digital/build-container-image
-
-templates:
-  - composite-action-workflows
