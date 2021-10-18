@@ -1,0 +1,4 @@
+repository: twin-digital/action-create-release
+
+templates:
+  - composite-action-workflows
