@@ -77,16 +77,15 @@ jobs:
 
           cd target
 
-
           git config user.name "Twin-Bot"
           git config user.email twinbot@twindigital.io
           
+          git add .
+
           if git diff-index --quiet HEAD --; then
             echo No changes to apply.
           else
-            git add .
             git commit -m "${COMMIT_MESSAGE}"
             git push
           fi
         shell: bash
-
