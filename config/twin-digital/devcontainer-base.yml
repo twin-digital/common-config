@@ -1,0 +1,3 @@
+repository: twin-digital/devcontainer-base
+templates:
+  - container-image
