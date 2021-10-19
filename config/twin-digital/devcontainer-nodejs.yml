@@ -1,0 +1,3 @@
+repository: twin-digital/devcontainer-nodejs
+templates:
+  - container-image
