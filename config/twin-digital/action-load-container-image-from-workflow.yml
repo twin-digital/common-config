@@ -1,0 +1,4 @@
+repository: twin-digital/action-load-container-image-from-workflow
+
+templates:
+  - composite-action-workflows
